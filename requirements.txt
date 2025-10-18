@@ -1,1 +1,1 @@
-# Standard library only; no third-party dependencies required.
+openai>=1.30.0

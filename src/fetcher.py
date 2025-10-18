@@ -1,58 +1,64 @@
-"""Network layer for retrieving earnings report HTML content."""
+"""Functions for downloading earnings report PDFs."""
 
 from __future__ import annotations
 
-import logging
+import pathlib
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Optional
 
-DEFAULT_TIMEOUT = 15
+DEFAULT_TIMEOUT = 30
+DEFAULT_DIR = pathlib.Path("pdf")
 
 
 @dataclass
-class FetchResult:
-    """Container for fetched payloads."""
+class DownloadResult:
+    """Metadata about a downloaded PDF file."""
 
     url: str
-    content: str
-    encoding: str
+    path: pathlib.Path
+    bytes_written: int
 
 
-class FetchError(RuntimeError):
-    """Raised when an earnings report cannot be retrieved."""
+class DownloadError(RuntimeError):
+    """Raised when the earnings report download fails."""
 
 
-def fetch_content(url: str, *, timeout: Optional[int] = None) -> FetchResult:
-    """Download the report at ``url`` and return the decoded payload.
+def download_pdf(
+    url: str,
+    *,
+    directory: Optional[pathlib.Path] = None,
+    timeout: Optional[int] = None,
+) -> DownloadResult:
+    """Download the PDF at ``url`` and persist it under ``directory``."""
 
-    The function relies on :mod:`urllib` to avoid external dependencies.
-    """
+    target_dir = directory or DEFAULT_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = _suggest_filename(url)
+    destination = target_dir / filename
 
     request = urllib.request.Request(
         url,
-        headers={
-            "User-Agent": (
-                "earnings-summarizer/1.0 (+https://github.com/sijian2001/openai)"
-            )
-        },
+        headers={"User-Agent": "earnings-summarizer/1.0"},
         method="GET",
     )
 
     try:
         with urllib.request.urlopen(request, timeout=timeout or DEFAULT_TIMEOUT) as resp:
-            raw_bytes = resp.read()
-            encoding = resp.headers.get_content_charset() or "utf-8"
-            try:
-                text = raw_bytes.decode(encoding, errors="replace")
-            except LookupError as exc:  # Unknown encoding
-                logging.getLogger(__name__).warning(
-                    "Unknown encoding %s, falling back to utf-8: %s", encoding, exc
-                )
-                text = raw_bytes.decode("utf-8", errors="replace")
-                encoding = "utf-8"
+            data = resp.read()
     except urllib.error.URLError as exc:
-        raise FetchError(f"Failed to download {url}: {exc}") from exc
+        raise DownloadError(f"Failed to download {url}: {exc}") from exc
 
-    return FetchResult(url=url, content=text, encoding=encoding)
+    destination.write_bytes(data)
+    return DownloadResult(url=url, path=destination, bytes_written=len(data))
+
+
+def _suggest_filename(url: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    name = pathlib.Path(parsed.path).name or "report.pdf"
+    if not name.lower().endswith(".pdf"):
+        name = f"{name}.pdf"
+    return name

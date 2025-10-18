@@ -1,30 +1,56 @@
-import unittest
+import pathlib
+import tempfile
+from types import SimpleNamespace
+from unittest import TestCase
 
-from src.summarizer import Summary, summarize_text, top_keywords
-
-
-class SummarizerTests(unittest.TestCase):
-    def test_summarize_text_prioritizes_informative_sentences(self) -> None:
-        text = (
-            "Revenue for the quarter reached $10 billion, growing 20 percent year over year. "
-            "We expanded operating margin to 32 percent, supported by disciplined cost controls. "
-            "Cash flow from operations totaled $3.5 billion, allowing us to repurchase $1 billion of shares. "
-            "The company announced a new product line targeting enterprise clients. "
-            "We remain focused on long-term growth opportunities across cloud and AI."
-        )
-
-        summary = summarize_text(text, sentence_limit=3)
-        self.assertIsInstance(summary, Summary)
-        self.assertLessEqual(len(summary.sentences), 3)
-        self.assertTrue(
-            any("Revenue for the quarter" in sentence for sentence in summary.sentences)
-        )
-
-    def test_top_keywords_filters_stopwords(self) -> None:
-        keywords = top_keywords("the revenue increased and the revenue guidance improved")
-        self.assertIn("revenue", keywords)
-        self.assertNotIn("the", keywords)
+from src.summarizer import SummarizationError, summarize_pdf
 
 
-if __name__ == "__main__":
-    unittest.main()
+class FakeFiles:
+    def __init__(self, summary_text: str) -> None:
+        self._summary_text = summary_text
+
+    def create(self, *, file, purpose: str):
+        file.read()
+        return SimpleNamespace(id="file-123", purpose=purpose)
+
+
+class FakeResponses:
+    def __init__(self, summary_text: str) -> None:
+        self._summary_text = summary_text
+
+    def create(self, **kwargs):
+        return SimpleNamespace(output_text=self._summary_text)
+
+
+class FakeClient:
+    """Minimal stub emulating the OpenAI client methods we call."""
+
+    def __init__(self, summary_text: str = "Bullet 1\nBullet 2") -> None:
+        self.files = FakeFiles(summary_text)
+        self.responses = FakeResponses(summary_text)
+
+
+class SummarizerTests(TestCase):
+    def test_summarize_pdf_writes_summary_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pdf_path = pathlib.Path(tmpdir) / "mock.pdf"
+            pdf_path.write_bytes(b"%PDF-1.4 placeholder")
+
+            output_dir = pathlib.Path(tmpdir) / "summaries"
+            result = summarize_pdf(
+                pdf_path,
+                client=FakeClient(),
+                output_dir=output_dir,
+                model="test-model",
+            )
+
+            self.assertEqual(result.model, "test-model")
+            self.assertTrue(result.output_path.exists())
+            self.assertIn("Bullet 1", result.summary_text)
+
+    def test_summarize_pdf_raises_for_missing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pdf_path = pathlib.Path(tmpdir) / "missing.pdf"
+            with self.assertRaises(SummarizationError):
+                summarize_pdf(pdf_path, client=FakeClient())

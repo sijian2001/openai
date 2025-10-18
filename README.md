@@ -1,32 +1,37 @@
 # Earnings Report Summarizer
 
-python program を作って、株式銘柄の決算報告をサマライズしてください。  
-python programのパラメータは決算報告書のURLです。  
-サマライズの結果は整形して、consoleに出力してください。
+python program を作って、株式銘柄の決算報告書をサマライズしてください。
+python programのパラメータ：決算報告書のurl
 
-このリポジトリは、決算報告書 (HTML) を取得して要約を生成する簡易CLIツールです。
-外部ライブラリに依存せず、標準ライブラリのみで動作します。
+処理内容：
+1. URLを使って決算報告書 (PDF) をダウンロードし、`pdf/` 配下に保存する  
+2. OpenAI API を使って PDF の内容を解析し、要約結果を生成する  
+3. 要約結果を整形して console に出力し、テキストファイルとして `summaries/` 配下へ保存する
+
+pythonプロジェクトは仮想環境を利用します。
 
 ## Requirements
 - Python 3.12 以上
 - インターネット接続（決算報告書を取得するため）
+- OpenAI API キー（環境変数 `OPENAI_API_KEY` で設定）
 
 ## Setup
 ```bash
-python3 -m venv .venv --without-pip
+python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 ```
-
-## Installation
-依存パッケージはありません。標準ライブラリのみで動作します。
 
 ## Usage
 ```bash
+export OPENAI_API_KEY="sk-..."
 python -m src.cli <report-url>
 ```
 
-オプション:
-- `--max-sentences`: 出力する要約文の最大数 (デフォルト: 5)
+主なオプション:
+- `--model`: 使用する OpenAI モデル (デフォルト: `gpt-4o-mini`)
+- `--pdf-dir`: PDF の保存ディレクトリ (デフォルト: `pdf/`)
+- `--output-dir`: 要約結果を保存するディレクトリ (デフォルト: `summaries/`)
 
 ## Tests
 ```bash
@@ -37,10 +42,10 @@ python -m unittest
 ```
 src/
   cli.py          # エントリーポイント
-  fetcher.py      # レポートのダウンロード処理
-  summarizer.py   # 要約ロジック
-  parser/
-    html_text.py  # HTMLからテキストを抽出
+  fetcher.py      # PDF ダウンロード処理
+  summarizer.py   # OpenAI API を利用した要約ロジック
 tests/
   test_*.py       # ユニットテスト
+pdf/              # ダウンロードした決算報告書
+summaries/        # 出力した要約テキスト
 ```
