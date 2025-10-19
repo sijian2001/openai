@@ -4,7 +4,7 @@ import urllib.error
 from unittest import TestCase
 from unittest.mock import patch
 
-from src.fetcher import DownloadError, download_pdf
+from src.summary.fetcher import DownloadError, download_pdf
 
 
 class FetcherTests(TestCase):

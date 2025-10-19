@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import patch
 
-from src.summarizer import (
+from src.summary.summarizer import (
     SummarizationError,
     _default_client,
     _extract_text,
@@ -108,7 +108,7 @@ class ExplodingClient:
 
 class SummarizerHelperTests(TestCase):
     def test_default_client_requires_openai(self) -> None:
-        with patch("src.summarizer.OpenAI", None):
+        with patch("src.summary.summarizer.OpenAI", None):
             with self.assertRaises(SummarizationError):
                 _default_client()
 
