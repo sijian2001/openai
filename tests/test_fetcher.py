@@ -1,4 +1,3 @@
-import io
 import pathlib
 import tempfile
 import urllib.error
@@ -29,3 +28,16 @@ class FetcherTests(TestCase):
                 download_pdf(
                     "https://example.com/report.pdf", directory=pathlib.Path(tmpdir)
                 )
+
+    @patch("urllib.request.urlopen")
+    def test_download_pdf_reuses_existing_file(self, mock_urlopen) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            directory = pathlib.Path(tmpdir)
+            existing = directory / "report.pdf"
+            existing.write_bytes(b"cached-pdf")
+
+            result = download_pdf("https://example.com/report.pdf", directory=directory)
+
+            self.assertEqual(result.path, existing)
+            self.assertEqual(result.bytes_written, len(b"cached-pdf"))
+            mock_urlopen.assert_not_called()

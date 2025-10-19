@@ -1,0 +1,9 @@
+# Configuration for the earnings report summarizer CLI.
+# Set the OPENAI_API_KEY environment variable before running.
+
+summarizer:
+  model: "gpt-4o-mini"
+  output_dir: "output/summaries"
+
+fetcher:
+  pdf_dir: "output/pdf"

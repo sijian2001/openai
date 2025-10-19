@@ -40,6 +40,10 @@ def download_pdf(
     filename = _suggest_filename(url)
     destination = target_dir / filename
 
+    if destination.exists():
+        size = destination.stat().st_size
+        return DownloadResult(url=url, path=destination, bytes_written=size)
+
     request = urllib.request.Request(
         url,
         headers={"User-Agent": "earnings-summarizer/1.0"},
@@ -47,7 +51,9 @@ def download_pdf(
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=timeout or DEFAULT_TIMEOUT) as resp:
+        with urllib.request.urlopen(
+            request, timeout=timeout or DEFAULT_TIMEOUT
+        ) as resp:
             data = resp.read()
     except urllib.error.URLError as exc:
         raise DownloadError(f"Failed to download {url}: {exc}") from exc
