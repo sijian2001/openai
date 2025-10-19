@@ -24,6 +24,12 @@ src/
 - 既存のフェッチャー・サマライザーテストもインポート先を更新し、キャッシュやエラー判定などの分岐網羅を維持。
 - `pytest`, `ruff`, `black` を使用したローカル検証手順を README と整合。
 
+## OCR パッケージ追加
+- `src/ocr/` を新設し、`cli.py` と `recognizer.py` に責務を分割。CLI は入出力と CSV 生成を担当し、`recognizer.py` は OpenAI Responses API への問い合わせと文字列抽出を担当する。
+- PNG 画像を base64 エンコードして API に渡し、応答からテキストを抽出する共通ロジック（`_extract_text`）を実装。OCR エラーは `OCRProcessingError` にラップ。
+- `process_images()` で複数画像を扱い、認識結果をラインごとの CSV として保存する。
+- テストは `tests/ocr/` 配下に配置し、API クライアントをモックしてバイナリ読み込み・CSV 出力・エラーハンドリングを検証する。
+
 ## 今後の検討事項
 - 追加モジュール（parser 等）が増える場合は `src/summary/` にサブパッケージを切り、テストもミラー構成で配置する。
 - `DEFAULT_DIR` など設定値は将来的に設定ファイルへ集約することを検討。
