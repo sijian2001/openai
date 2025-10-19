@@ -25,8 +25,8 @@ class ConfigurationError(RuntimeError):
 def load_config(path: Optional[Path] = DEFAULT_CONFIG_OVERRIDE_PATH) -> dict:
     """Load summarizer configuration.
 
-    Defaults are sourced from ``src/config.yaml`` bundled with the package. When
-    ``path`` is provided and exists (defaulting to ``config.yaml`` in the working
+    Defaults are sourced from ``src/summary/config.yaml`` bundled with the package.
+    When ``path`` is provided and exists (defaulting to ``config.yaml`` in the working
     directory), those values overlay the packaged defaults.
     """
     config = _load_package_defaults()

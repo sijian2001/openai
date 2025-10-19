@@ -6,9 +6,15 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import patch
 
-from src.cli import ConfigurationError, _config_value, load_config, main, parse_args
-from src.fetcher import DownloadError
-from src.summarizer import SummarizationError
+from src.summary.cli import (
+    ConfigurationError,
+    _config_value,
+    load_config,
+    main,
+    parse_args,
+)
+from src.summary.fetcher import DownloadError
+from src.summary.summarizer import SummarizationError
 
 
 class LoadConfigTests(TestCase):
@@ -41,7 +47,7 @@ class LoadConfigTests(TestCase):
             self.assertEqual(config["fetcher"]["pdf_dir"], "/tmp/pdf")
 
     def test_load_config_returns_empty_when_bundled_missing(self) -> None:
-        with patch("src.cli.resources.files", side_effect=FileNotFoundError):
+        with patch("src.summary.cli.resources.files", side_effect=FileNotFoundError):
             config = load_config(pathlib.Path("missing.yaml"))
             self.assertEqual(config, {})
 
@@ -53,7 +59,7 @@ class LoadConfigTests(TestCase):
             def open(self, *args, **kwargs):
                 raise FileNotFoundError
 
-        with patch("src.cli.resources.files", return_value=MissingResource()):
+        with patch("src.summary.cli.resources.files", return_value=MissingResource()):
             config = load_config(pathlib.Path("missing.yaml"))
             self.assertEqual(config, {})
 
@@ -65,7 +71,7 @@ class LoadConfigTests(TestCase):
             def open(self, *args, **kwargs):
                 return io.StringIO("- not-a-mapping")
 
-        with patch("src.cli.resources.files", return_value=BadResource()):
+        with patch("src.summary.cli.resources.files", return_value=BadResource()):
             with self.assertRaises(ConfigurationError):
                 load_config(pathlib.Path("missing.yaml"))
 
@@ -89,10 +95,10 @@ class CliExecutionTests(TestCase):
             "summarizer": {"model": "gpt-4o-mini", "output_dir": "output/summaries"},
             "fetcher": {"pdf_dir": "output/pdf"},
         }
-        with patch("src.cli.load_config", return_value=config), patch.dict(
+        with patch("src.summary.cli.load_config", return_value=config), patch.dict(
             os.environ, {}, clear=True
-        ), patch("src.cli.download_pdf") as mock_download, patch(
-            "src.cli.summarize_pdf"
+        ), patch("src.summary.cli.download_pdf") as mock_download, patch(
+            "src.summary.cli.summarize_pdf"
         ) as mock_summary:
             exit_code = main(["https://example.com/report.pdf"])
 
@@ -120,12 +126,12 @@ class CliExecutionTests(TestCase):
                 output_path=summary_path,
             )
 
-            with patch("src.cli.load_config", return_value=config), patch.dict(
+            with patch("src.summary.cli.load_config", return_value=config), patch.dict(
                 os.environ, {"OPENAI_API_KEY": "token"}, clear=True
             ), patch(
-                "src.cli.download_pdf", return_value=download_result
+                "src.summary.cli.download_pdf", return_value=download_result
             ) as mock_download, patch(
-                "src.cli.summarize_pdf", return_value=summary_result
+                "src.summary.cli.summarize_pdf", return_value=summary_result
             ) as mock_summarize:
                 captured_output = io.StringIO()
                 with patch("sys.stdout", captured_output):
@@ -144,7 +150,7 @@ class CliExecutionTests(TestCase):
 
     def test_main_returns_error_on_config_failure(self) -> None:
         with patch(
-            "src.cli.load_config", side_effect=ConfigurationError("boom")
+            "src.summary.cli.load_config", side_effect=ConfigurationError("boom")
         ), patch.dict(os.environ, {"OPENAI_API_KEY": "token"}, clear=True):
             captured_error = io.StringIO()
             with patch("sys.stderr", captured_error):
@@ -158,12 +164,12 @@ class CliExecutionTests(TestCase):
             "summarizer": {"model": "m", "output_dir": "output/summaries"},
             "fetcher": {"pdf_dir": "output/pdf"},
         }
-        with patch("src.cli.load_config", return_value=config), patch.dict(
+        with patch("src.summary.cli.load_config", return_value=config), patch.dict(
             os.environ, {"OPENAI_API_KEY": "token"}, clear=True
         ), patch(
-            "src.cli.download_pdf", side_effect=DownloadError("network down")
+            "src.summary.cli.download_pdf", side_effect=DownloadError("network down")
         ) as mock_download, patch(
-            "src.cli.summarize_pdf"
+            "src.summary.cli.summarize_pdf"
         ) as mock_summarize:
             captured_error = io.StringIO()
             with patch("sys.stderr", captured_error):
@@ -184,10 +190,13 @@ class CliExecutionTests(TestCase):
             pdf_path.write_bytes(b"%PDF")
             download_result = SimpleNamespace(path=pdf_path, bytes_written=4)
 
-            with patch("src.cli.load_config", return_value=config), patch.dict(
+            with patch("src.summary.cli.load_config", return_value=config), patch.dict(
                 os.environ, {"OPENAI_API_KEY": "token"}, clear=True
-            ), patch("src.cli.download_pdf", return_value=download_result), patch(
-                "src.cli.summarize_pdf", side_effect=SummarizationError("api failure")
+            ), patch(
+                "src.summary.cli.download_pdf", return_value=download_result
+            ), patch(
+                "src.summary.cli.summarize_pdf",
+                side_effect=SummarizationError("api failure"),
             ) as mock_summarize:
                 captured_error = io.StringIO()
                 with patch("sys.stderr", captured_error):

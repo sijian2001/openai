@@ -1,7 +1,7 @@
 # Earnings Report Summarizer
 
 上場企業の決算報告書（PDF）を取得し、OpenAI API を用いて日本語で要約する CLI ツールです。  
-`src/cli.py` の `main()` がエントリーポイントとなり、1 つの決算報告書 URL を受け取って処理を実行します。
+`src/summary/cli.py` の `main()` がエントリーポイントとなり、1 つの決算報告書 URL を受け取って処理を実行します。
 
 ## 必要要件
 - Python 3.12 以上
@@ -16,8 +16,8 @@ pip install -r requirements.txt
 ```
 
 ## 設定ファイル
-`src/config.yaml` に CLI の既定値が同梱されています（モデル ID や出力先ディレクトリなど）。
-リポジトリ直下に `config.yaml` を作成すれば、その内容で `src/config.yaml` の値を上書きできます。
+`src/summary/config.yaml` に CLI の既定値が同梱されています（モデル ID や出力先ディレクトリなど）。
+リポジトリ直下に `config.yaml` を作成すれば、その内容で `src/summary/config.yaml` の値を上書きできます。
 
 ```yaml
 summarizer:
@@ -31,10 +31,10 @@ OpenAI API キーは実行前に `export OPENAI_API_KEY="sk-..."` を行って�
 
 ## 使い方
 ```bash
-python -m src.cli <filing_url>
+python -m src.summary.cli <filing_url>
 ```
 
-主なオプション（`python -m src.cli --help` でも確認可能）:
+主なオプション（`python -m src.summary.cli --help` でも確認可能）:
 - `--model`: 要約に利用する OpenAI モデル（既定値は設定ファイルの `summarizer.model`）
 - `--pdf-dir`: PDF を保存するディレクトリ（既定値は `fetcher.pdf_dir`）
 - `--output-dir`: 要約テキスト／レスポンス JSON を出力するディレクトリ（既定値は `summarizer.output_dir`）
@@ -54,14 +54,16 @@ python -m src.cli <filing_url>
 ## ディレクトリ構成
 ```
 src/
-  cli.py           # CLI エントリーポイント。Config 読み込みと各モジュールのオーケストレーション
-  fetcher.py       # HTTP 経由で PDF を取得し、ローカルに保存
-  summarizer.py    # OpenAI Responses API を呼び出して要約（JSON キャッシュ対応）
+  summary/
+    __init__.py
+    cli.py         # CLI エントリーポイント。Config 読み込みと各モジュールのオーケストレーション
+    fetcher.py     # HTTP 経由で PDF を取得し、ローカルに保存
+    summarizer.py  # OpenAI Responses API を呼び出して要約（JSON キャッシュ対応）
 tests/
   fixtures/        # サンプル決算報告書などのテスト用ファイル
   test_fetcher.py
   test_summarizer.py
-src/config.yaml    # CLI の既定値を管理（変更可）
+src/summary/config.yaml  # CLI の既定値を管理（変更可）
 config.yaml        # 任意のローカル上書き設定
 output/            # 既定設定での PDF と要約の保存先
 ```
