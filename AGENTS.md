@@ -1,8 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Place production code under `src/summary/`, keeping the HTTP fetcher, parser, and summarizer modules isolated (for example `src/summary/fetcher.py`, `src/summary/parser/`, `src/summary/summarizer.py`).
-- Expose the main entry point via `src/summary/cli.py` with a callable `main()` that accepts the earnings-report URL parameter.
+- Place production code under dedicated packages (e.g., `src/summary/`, `src/ocr/`), keeping the HTTP fetcher, parser, summarizer, and OCR modules isolated (for example `src/summary/fetcher.py`, `src/ocr/recognizer.py`).
+- Expose main entry points via package CLIs (`src/summary/cli.py`, `src/ocr/cli.py`) with callable `main()` functions.
 - Keep automated checks in `tests/` using mirrored subpackages (e.g., `tests/test_fetcher.py`) and store small sample filings in `tests/fixtures/`.
 - Add persistent reference material to `docs/`, and use `.cache/` (gitignored) for transient downloads to avoid committing large files.
 
@@ -10,6 +10,7 @@
 - `python -m venv .venv && source .venv/bin/activate` — create and activate the local virtual environment defined in the README.
 - `pip install -r requirements.txt` — install runtime and tooling dependencies before running any scripts.
 - `python -m src.summary.cli <filing_url>` — execute the summarizer end-to-end against a live earnings report.
+- `python -m src.ocr.cli --input-dir input/images` — run OCR over PNG files and emit CSV outputs.
 - `pytest` — run the unit and integration suites; add `-k` to target a single module when iterating.
 - `ruff check src tests` and `black src tests` — lint and format code prior to opening a pull request.
 

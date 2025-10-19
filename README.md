@@ -3,6 +3,8 @@
 上場企業の決算報告書（PDF）を取得し、OpenAI API を用いて日本語で要約する CLI ツールです。  
 `src/summary/cli.py` の `main()` がエントリーポイントとなり、1 つの決算報告書 URL を受け取って処理を実行します。
 
+また、`src/ocr/cli.py` では画像ファイル (`input/images/*.png`) に対する OCR を実行し、結果を CSV 形式で同階層へ出力できます。
+
 ## 必要要件
 - Python 3.12 以上
 - OpenAI API キー（環境変数 `OPENAI_API_KEY`）
@@ -41,6 +43,15 @@ python -m src.summary.cli <filing_url>
 
 実行結果は標準出力とテキストファイルに保存され、API 応答の JSON は同じディレクトリに `_response.json` としてキャッシュされます。
 
+### OCR の実行例
+```bash
+python -m src.ocr.cli --input-dir input/images
+```
+
+- `input/images/*.png` を走査し、OpenAI の API を用いて文字認識を行います。
+- 抽出結果は元のファイル名に対応した CSV (`.csv`) として同ディレクトリに保存されます。
+- 環境変数 `OPENAI_API_KEY` の設定が必要です。
+
 ## 開発とテスト
 - ユニット／統合テスト: `pytest`
 - 対象テストのみ実行: `pytest -k test_fetcher`
@@ -54,6 +65,10 @@ python -m src.summary.cli <filing_url>
 ## ディレクトリ構成
 ```
 src/
+  ocr/
+    __init__.py
+    cli.py         # 画像 OCR の CLI
+    recognizer.py  # OpenAI Responses API を呼び出して OCR
   summary/
     __init__.py
     cli.py         # CLI エントリーポイント。Config 読み込みと各モジュールのオーケストレーション
@@ -61,6 +76,10 @@ src/
     summarizer.py  # OpenAI Responses API を呼び出して要約（JSON キャッシュ対応）
 tests/
   fixtures/        # サンプル決算報告書などのテスト用ファイル
+  ocr/
+    __init__.py
+    test_cli.py
+    test_recognizer.py
   test_fetcher.py
   test_summarizer.py
 src/summary/config.yaml  # CLI の既定値を管理（変更可）
